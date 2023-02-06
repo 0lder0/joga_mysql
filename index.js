@@ -1,61 +1,79 @@
-const express = require('express')
+const express = require("express")
 const app = express()
 
-const path = require('path')
+const path = require("path")
 
-const hbs = require('express-handlebars')
-app.set('views', path.join(__dirname, 'views'))
-app.set('view engine', 'hbs')
-app.engine('hbs', hbs.engine({
-    extname: 'hbs',
-    defaultLayout: 'main',
-    layoutsDir: __dirname + '/views/layouts',
+const hbs = require("express-handlebars")
+app.set("views", path.join(__dirname, "views"))
+app.set("view engine", "hbs")
+app.engine("hbs", hbs.engine ({
+    extname: "hbs",
+    defaultLayout: "main",
+    layoutsDir: __dirname + "/views/layouts/"
 }))
 
-app.use(express.static('public'))
+app.use(express.static("public"))
 
-const mysql = require('mysql')
+const mysql = require("mysql")
 
-const bodyParser = require('body-parser')
+const bodyParser = require("body-parser")
+const {query} = require("express");
+
 app.use(bodyParser.urlencoded({extended: true}))
 
-var con = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: 'qwerty',
-    database: 'joga_mysql'
+let con = mysql.createConnection({
+    host: "localhost",
+    user: "root",
+    password: "qwerty",
+    database: "joga_mysql"
 })
 
 con.connect(function (err) {
     if (err) throw err
-    console.log('Connected to joga_mysql db')
+    console.log("Connected to joga_mysql db")
 })
 
 app.get("/", (req, res) => {
-    let query = 'SELECT * FROM article';
+    let query = "SELECT * FROM article";
     let articles = []
     con.query(query, (err, result) => {
         if (err) throw err
         articles = result
-        res.render('index', {
+        res.render("index", {
             articles: articles
         })
     })
 });
 
-app.get('/article/:slug', (req, res) => {
-    let query = `SELECT * FROM article WHERE slug='${req.params.slug}'`
+app.get("/article/:slug", (req, res) => {
+    let query = `SELECT article.*, author.name AS author_name FROM article JOIN author ON article.author_id = author.id WHERE article.slug="${req.params.slug}"`;
+    let article;
+    con.query(query, (err, result) => {
+        if (err) throw err;
+        article = result[0];
+        console.log(article);
+        res.render("article", {
+            article: article,
+            author_name: article.author_name
+        });
+    });
+});
+
+app.get("/article/:slug", (req, res) => {
+    let query = `SELECT * FROM article WHERE slug="${req.params.slug}"`
     let article
     con.query(query, (err, result) => {
         if (err) throw err
         article = result
-        console.log(article)
-        res.render('article', {
-        article: article
+        //console.log(article)
+        res.render("article", {
+            article: article
         })
     })
-})
+});
+
+
 
 app.listen(3000, () => {
-    console.log('App is started at https://localhost:3000')
+    console.log("App is started at http://localhost:3000")
 })
